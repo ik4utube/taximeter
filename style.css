@@ -22,54 +22,65 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-html, body { margin: 0; min-height: 100%; }
-
-body {
+html, body {
   background: radial-gradient(ellipse at 50% -20%, #2c2b28 0%, #0d0d0c 65%) fixed, var(--bg);
   color: var(--white);
   font-family: "Do Hyeon", system-ui, sans-serif;
-  display: flex;
-  justify-content: center;
-  padding: calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 14px);
+  overflow: hidden;
   -webkit-user-select: none;
   user-select: none;
   overscroll-behavior: none;
   -webkit-touch-callout: none;
 }
 
-.device { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 14px; }
+/* 아이폰 15/16 홈 화면 앱의 실사용 영역(393×852 − 안전영역)을 기준으로 설계하고,
+   기기마다 비율을 유지한 채 확대·축소한다 (app.js fitDevice) */
+.stage {
+  position: fixed; inset: 0;
+  padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 18px);
+  display: flex; align-items: center; justify-content: center;
+}
+.device {
+  flex: none;
+  width: 393px; height: 759px;
+  transform: scale(var(--s, 1));
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 14px 14px 16px;
+  border-radius: 32px;
+  background: linear-gradient(170deg, #2a2a27 0%, #1b1b19 45%, #121211 100%);
+  box-shadow:
+    inset 0 1px 0 #45443f,
+    inset 0 -2px 0 #0a0a09,
+    0 0 0 1px #050505,
+    0 18px 40px rgba(0,0,0,.7);
+}
 
 button { font: inherit; cursor: pointer; border: 0; touch-action: manipulation; }
 
 /* ---------- header plate ---------- */
-.plate {
-  display: flex; align-items: center; gap: 10px;
-  padding: 0 6px;
-  letter-spacing: .28em;
-}
+.plate { flex: none; display: flex; align-items: center; gap: 10px; padding: 2px 8px 0; letter-spacing: .28em; }
 .brand { color: var(--amber); font-size: 18px; text-shadow: 0 0 10px var(--amber-glow); }
-.model { margin-left: auto; color: #6f6c63; font-family: "Nanum Gothic Coding", monospace; font-size: 12px; letter-spacing: .1em; }
+.hstat {
+  margin-left: auto; display: flex; align-items: baseline; gap: 5px;
+  color: #85827a; font-family: "Nanum Gothic Coding", monospace; font-size: 11px; letter-spacing: .02em;
+}
+.hstat b { color: var(--amber); font-weight: 700; }
+.hstat i { font-style: normal; color: #55534d; }
+.hstat .seg { color: var(--amber); font-size: 12px; text-shadow: 0 0 6px var(--amber-glow); }
 .led { width: 9px; height: 9px; border-radius: 50%; background: #4a1a14; box-shadow: inset 0 1px 2px rgba(0,0,0,.6); }
 .led.on { background: #ff3b24; box-shadow: 0 0 8px #ff3b24, 0 0 2px #fff inset; animation: blink 1.2s steps(2, jump-none) infinite; }
 @keyframes blink { 50% { opacity: .35; } }
 
 /* ---------- meter ---------- */
-.meter {
-  background: linear-gradient(#272725, #171716);
-  border-radius: 26px;
-  padding: 14px;
-  box-shadow: inset 0 1px 0 #3d3c38, 0 14px 30px rgba(0,0,0,.65);
-}
-
 .screen {
+  flex: 1 1 0; min-height: 0;
   position: relative;
   overflow: hidden;
+  container-type: inline-size;
   background: var(--lcd);
   border-radius: 16px;
-  padding: 10px 12px 10px 8px;
-  display: grid;
-  grid-template-columns: 40% 1fr;
-  gap: 4px;
+  padding: 10px 14px 12px;
+  display: flex; flex-direction: column; justify-content: space-between;
   box-shadow: inset 0 3px 12px rgba(0,0,0,.55), inset 0 -1px 0 rgba(255,255,255,.05);
 }
 .screen::after {
@@ -80,42 +91,55 @@ button { font: inherit; cursor: pointer; border: 0; touch-action: manipulation; 
 }
 
 .seg { font-family: "DSEG7", "Nanum Gothic Coding", monospace; font-weight: 700; }
+.amber { color: var(--amber); text-shadow: 0 0 6px var(--amber-glow); }
 
-.left { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
-#horse { width: 100%; height: auto; display: block; overflow: visible; }
-.pct { color: var(--amber); font-size: 17px; margin-top: 2px; text-shadow: 0 0 6px var(--amber-glow); }
-.dist { color: var(--amber); font-size: 18px; text-shadow: 0 0 6px var(--amber-glow); display: flex; align-items: baseline; gap: 3px; }
-.dist small { font-family: "Do Hyeon"; font-size: 12px; opacity: .8; }
-.badge {
-  margin-top: 5px;
-  background: var(--orange); color: #fff;
-  font-size: 15px; line-height: 1;
-  padding: 5px 11px 4px; border-radius: 999px;
-  box-shadow: 0 0 10px rgba(238,106,36,.45);
+.top { flex: 1; min-height: 0; display: flex; align-items: center; gap: 6px; }
+#horse {
+  flex: none; width: 46cqw; height: auto;
+  display: block; overflow: visible;
+  filter: drop-shadow(0 0 5px rgba(245,195,59,.3));
 }
+.side {
+  flex: 1; align-self: stretch;
+  display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between;
+  padding: 2px 0 4px;
+  color: var(--amber); text-shadow: 0 0 6px var(--amber-glow);
+}
+.side small { font-family: "Do Hyeon"; font-size: 3.4cqw; opacity: .85; }
+.speed, .pct, .dist { display: flex; align-items: baseline; gap: 4px; }
+.speed { font-size: 6.4cqw; }
+.pct, .dist { font-size: 5.2cqw; }
 
-.right { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; min-width: 0; }
-.speed { color: var(--amber); font-size: clamp(17px, 5.4vw, 23px); text-shadow: 0 0 6px var(--amber-glow); display: flex; align-items: baseline; gap: 4px; }
-.speed small { font-family: "Do Hyeon"; font-size: .75em; }
-
-.fare { display: flex; align-items: baseline; gap: 2px; color: var(--white); }
-.fare .digits { position: relative; font-size: clamp(32px, 10.4vw, 48px); line-height: 1.1; }
+.fare {
+  flex: none;
+  display: flex; align-items: baseline; justify-content: flex-end; gap: 1cqw;
+  color: var(--white);
+  margin: 0 0 1.5cqw;
+}
+.fare .digits { position: relative; font-size: 18cqw; line-height: 1.05; }
 .fare .ghost { color: rgba(255,255,255,.055); }
-.fare .val { position: absolute; right: 0; top: 0; text-shadow: 0 0 12px rgba(255,255,255,.35); }
-.fare em { font-style: normal; font-size: clamp(26px, 8vw, 38px); text-shadow: 0 0 10px rgba(255,255,255,.3); }
+.fare .val { position: absolute; right: 0; top: 0; text-shadow: 0 0 14px rgba(255,255,255,.35); }
+.fare em { font-style: normal; font-size: 10.5cqw; text-shadow: 0 0 10px rgba(255,255,255,.3); }
 .fare.bump .val { animation: bump .35s ease-out; }
 @keyframes bump { 0% { color: #fff7c9; text-shadow: 0 0 22px #fff3a0; } 100% { } }
 
-.call { color: var(--amber); display: flex; align-items: center; gap: 6px; font-size: clamp(20px, 6vw, 26px); text-shadow: 0 0 6px var(--amber-glow); }
-.call small { font-family: "Do Hyeon"; font-size: 12px; line-height: 1.05; color: #bdb8a9; text-shadow: none; text-align: left; }
+.bottom { flex: none; display: flex; align-items: center; justify-content: space-between; }
+.badge {
+  background: var(--orange); color: #fff;
+  font-size: 5cqw; line-height: 1;
+  padding: 1.4cqw 3.6cqw 1.1cqw; border-radius: 999px;
+  box-shadow: 0 0 10px rgba(238,106,36,.45);
+}
+.call { color: var(--amber); display: flex; align-items: center; gap: 2cqw; font-size: 7cqw; text-shadow: 0 0 6px var(--amber-glow); }
+.call small { font-family: "Do Hyeon"; font-size: 3.4cqw; line-height: 1.05; color: #bdb8a9; text-shadow: none; text-align: right; }
 .call.editing .seg { animation: blink .7s steps(2, jump-none) infinite; }
 
-.modes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
+.modes { flex: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .modes button, .dlg-actions button {
   position: relative;
   color: var(--ink);
-  font-size: clamp(16px, 5vw, 20px);
-  padding: 9px 0 8px;
+  font-size: 20px;
+  padding: 11px 0 10px;
   border-radius: 11px;
   box-shadow: 0 3px 0 rgba(0,0,0,.55), inset 0 -3px 0 rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.7);
   transition: transform .05s, box-shadow .05s;
@@ -133,37 +157,34 @@ button { font: inherit; cursor: pointer; border: 0; touch-action: manipulation; 
 }
 
 /* ---------- keypad ---------- */
-.pad {
-  background: linear-gradient(#1e1e1c, #111110);
-  border-radius: 22px;
-  padding: 16px 14px;
-  display: grid;
-  grid-template-columns: 40% 1fr;
-  gap: 14px;
-  box-shadow: inset 0 1px 0 #34332f, 0 14px 30px rgba(0,0,0,.6);
+.num {
+  flex: none;
+  display: grid; gap: 10px;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(4, 64px);
+  padding-top: 12px;
+  border-top: 1px solid #0b0b0a;
+  box-shadow: inset 0 1px 0 #34332f;
 }
-.fn { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-content: center; }
+.fn {
+  flex: none;
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px;
+  padding-top: 12px;
+  border-top: 1px solid #0b0b0a;
+  box-shadow: inset 0 1px 0 #34332f;
+}
 .fn button, .num button {
-  background: linear-gradient(#383835, #2a2a28);
+  min-height: 0;
+  background: linear-gradient(#3a3a37, #2a2a28);
   color: #e6e2d6;
-  border-radius: 7px;
-  box-shadow: 0 2px 0 #000, inset 0 1px 0 rgba(255,255,255,.1);
+  border-radius: 12px;
+  box-shadow: 0 3px 0 #000, inset 0 1px 0 rgba(255,255,255,.1);
 }
-.fn button { font-size: 14px; padding: 8px 0; }
+.fn button { font-size: 16px; height: 46px; border-radius: 10px; }
 .fn button.on { color: var(--amber); text-shadow: 0 0 6px var(--amber-glow); }
-.num { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.num button { font-size: 21px; padding: 6px 0 5px; }
-.num button.blank { visibility: visible; pointer-events: none; opacity: .55; }
-.fn button:active, .num button:active { transform: translateY(2px); box-shadow: 0 0 0 #000, inset 0 2px 3px rgba(0,0,0,.5); }
-
-/* ---------- status ---------- */
-.status {
-  display: flex; justify-content: space-between; gap: 8px;
-  font-family: "Nanum Gothic Coding", monospace; font-size: 12px;
-  color: #85827a; padding: 0 6px;
-}
-.status b { color: #c9c4b4; font-weight: 700; }
-#hint { text-align: right; }
+.num button { font-size: 30px; }
+.num button.ok { font-size: 20px; background: linear-gradient(#5a4a1c, #3f3414); color: var(--amber); }
+.fn button:active, .num button:active { transform: translateY(2px); box-shadow: 0 1px 0 #000, inset 0 2px 3px rgba(0,0,0,.5); }
 
 /* ---------- dialogs ---------- */
 dialog {
@@ -187,8 +208,8 @@ dialog::backdrop { background: rgba(0,0,0,.78); backdrop-filter: blur(3px); }
 .info .dlg-actions { grid-template-columns: 1fr; }
 
 #toast {
-  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 24px);
-  transform: translate(-50%, 20px); opacity: 0;
+  position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 110px);
+  transform: translate(-50%, -12px); opacity: 0;
   background: #f5c33b; color: #1a1a18; padding: 9px 16px; border-radius: 999px;
   font-size: 15px; box-shadow: 0 8px 20px rgba(0,0,0,.5);
   transition: opacity .2s, transform .2s; pointer-events: none; white-space: nowrap;

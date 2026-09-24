@@ -1,4 +1,4 @@
-const CACHE = 'taximeter-v1';
+const CACHE = 'taximeter-v5';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -13,19 +13,18 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// stale-while-revalidate: 오프라인에서도 열리고, 온라인이면 다음 실행 때 최신 버전
+// network-first: 온라인이면 항상 최신 파일, 오프라인이면 캐시로 실행
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    caches.match(e.request).then((hit) => {
-      const net = fetch(e.request).then((res) => {
+    fetch(e.request)
+      .then((res) => {
         if (res.ok || res.type === 'opaque') {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(e.request, copy));
         }
         return res;
-      }).catch(() => hit);
-      return hit || net;
-    }),
+      })
+      .catch(() => caches.match(e.request, { ignoreSearch: true })),
   );
 });

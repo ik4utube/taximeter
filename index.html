@@ -19,61 +19,57 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="stage">
   <main class="device">
     <header class="plate">
       <span class="led" id="led"></span>
       <span class="brand">TAXI&nbsp;METER</span>
-      <span class="model">KJ-1996</span>
+      <span class="hstat">GPS <b id="gps">대기</b><i>·</i><span class="seg" id="elapsed">00:00:00</span></span>
     </header>
 
-    <section class="meter">
-      <div class="screen">
-        <div class="left">
-          <svg id="horse" viewBox="0 0 120 88" aria-label="달리는 말"></svg>
-          <div class="pct"><span id="pct">0</span>%</div>
-          <div class="dist"><span class="seg" id="dist">0.00</span><small>km</small></div>
-          <div class="badge" id="badge">빈차</div>
-        </div>
-        <div class="right">
+    <div class="screen">
+      <div class="top">
+        <svg id="horse" viewBox="0 0 140 100" aria-label="달리는 말"></svg>
+        <div class="side">
           <div class="speed"><span class="seg" id="speed">0.0</span><small>km/h</small></div>
-          <div class="fare" id="fareBox">
-            <span class="digits"><span class="seg ghost">88888</span><span class="seg val" id="fare">4800</span></span><em>원</em>
-          </div>
-          <div class="call"><span class="seg" id="call">0</span><small>호출<br>요금</small></div>
+          <div class="pct"><small>할증</small><span class="seg" id="pct">0</span><small>%</small></div>
+          <div class="dist"><span class="seg" id="dist">0.00</span><small>km</small></div>
         </div>
       </div>
-      <div class="modes">
-        <button data-act="idle"      class="c1" id="bIdle">빈차</button>
-        <button data-act="start"     class="c2" id="bStart">주행</button>
-        <button data-act="surcharge" class="c3" id="bSur">할증</button>
-        <button data-act="demo"      class="c4" id="bDemo">복합</button>
-        <button data-act="pay"       class="c5" id="bPay">지불</button>
+      <div class="fare" id="fareBox">
+        <span class="digits"><span class="seg ghost">88888</span><span class="seg val" id="fare">4800</span></span><em>원</em>
       </div>
-    </section>
+      <div class="bottom">
+        <div class="badge" id="badge">빈차</div>
+        <div class="call"><small>호출<br>요금</small><span class="seg" id="call">0</span></div>
+      </div>
+    </div>
 
-    <section class="pad">
-      <div class="fn">
-        <button data-act="sound" id="bSound">소리</button>
-        <button data-act="callfee" id="bCall">호출</button>
-        <button data-act="cancel">취소</button>
-        <button data-act="info">정보</button>
-        <button data-act="awake" id="bAwake">화면</button>
-        <button data-act="print">인쇄</button>
-      </div>
-      <div class="num">
-        <button data-num="1">1</button><button data-num="2">2</button><button data-num="3">3</button>
-        <button data-num="4">4</button><button data-num="5">5</button><button data-num="6">6</button>
-        <button data-num="7">7</button><button data-num="8">8</button><button data-num="9">9</button>
-        <button class="blank" tabindex="-1"></button><button data-num="0">0</button><button class="blank" tabindex="-1"></button>
-      </div>
-    </section>
+    <div class="modes">
+      <button data-act="idle"      class="c1" id="bIdle">빈차</button>
+      <button data-act="start"     class="c2" id="bStart">주행</button>
+      <button data-act="surcharge" class="c3" id="bSur">할증</button>
+      <button data-act="demo"      class="c4" id="bDemo">복합</button>
+      <button data-act="pay"       class="c5" id="bPay">지불</button>
+    </div>
 
-    <footer class="status">
-      <span>GPS <b id="gps">대기</b></span>
-      <span>주행 <b id="elapsed">00:00:00</b></span>
-      <span id="hint">주행을 누르면 출발</span>
-    </footer>
+    <div class="num">
+      <button data-num="1">1</button><button data-num="2">2</button><button data-num="3">3</button>
+      <button data-num="4">4</button><button data-num="5">5</button><button data-num="6">6</button>
+      <button data-num="7">7</button><button data-num="8">8</button><button data-num="9">9</button>
+      <button data-num="00">00</button><button data-num="0">0</button><button data-act="callok" class="ok">확인</button>
+    </div>
+
+    <div class="fn">
+      <button data-act="sound" id="bSound">소리</button>
+      <button data-act="callfee" id="bCall">호출</button>
+      <button data-act="cancel">취소</button>
+      <button data-act="info">정보</button>
+      <button data-act="awake" id="bAwake">화면</button>
+      <button data-act="print">인쇄</button>
+    </div>
   </main>
+  </div>
 
   <dialog id="receiptDlg">
     <div class="dlg-body">
@@ -103,7 +99,7 @@
         <tr><th>지불</th><td>도착 · 영수증 발행</td></tr>
         <tr><th>빈차</th><td>미터기 초기화</td></tr>
         <tr><th>복합</th><td>모의주행(데모) — 책상에서도 말이 달립니다</td></tr>
-        <tr><th>호출</th><td>누르고 숫자 입력 → 다시 눌러 호출요금 확정</td></tr>
+        <tr><th>호출</th><td>누르고 숫자 입력 → 확인(또는 호출)으로 호출요금 확정</td></tr>
         <tr><th>화면</th><td>화면 꺼짐 방지</td></tr>
       </table>
       <p class="fine">※ 재미로 만든 앱입니다. 실제로 청구되지 않습니다. 화면이 잠기면 iOS가 GPS를 멈출 수 있으니 주행 중엔 화면을 켜 두세요.</p>
