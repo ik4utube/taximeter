@@ -1,0 +1,196 @@
+@font-face {
+  font-family: "DSEG7";
+  src: url("https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Classic/DSEG7Classic-Bold.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: block;
+}
+
+:root {
+  --bg: #0d0d0c;
+  --lcd: #3a3c39;
+  --amber: #f5c33b;
+  --amber-glow: rgba(245, 195, 59, .45);
+  --white: #f6f2e6;
+  --orange: #ee6a24;
+  --ink: #1a1a18;
+  --c1: #fbfaf2;
+  --c2: #dccbf5;
+  --c3: #f8b7b5;
+  --c4: #f8e59c;
+  --c5: #c9efbf;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body { margin: 0; min-height: 100%; }
+
+body {
+  background: radial-gradient(ellipse at 50% -20%, #2c2b28 0%, #0d0d0c 65%) fixed, var(--bg);
+  color: var(--white);
+  font-family: "Do Hyeon", system-ui, sans-serif;
+  display: flex;
+  justify-content: center;
+  padding: calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 14px);
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+}
+
+.device { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 14px; }
+
+button { font: inherit; cursor: pointer; border: 0; touch-action: manipulation; }
+
+/* ---------- header plate ---------- */
+.plate {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 6px;
+  letter-spacing: .28em;
+}
+.brand { color: var(--amber); font-size: 18px; text-shadow: 0 0 10px var(--amber-glow); }
+.model { margin-left: auto; color: #6f6c63; font-family: "Nanum Gothic Coding", monospace; font-size: 12px; letter-spacing: .1em; }
+.led { width: 9px; height: 9px; border-radius: 50%; background: #4a1a14; box-shadow: inset 0 1px 2px rgba(0,0,0,.6); }
+.led.on { background: #ff3b24; box-shadow: 0 0 8px #ff3b24, 0 0 2px #fff inset; animation: blink 1.2s steps(2, jump-none) infinite; }
+@keyframes blink { 50% { opacity: .35; } }
+
+/* ---------- meter ---------- */
+.meter {
+  background: linear-gradient(#272725, #171716);
+  border-radius: 26px;
+  padding: 14px;
+  box-shadow: inset 0 1px 0 #3d3c38, 0 14px 30px rgba(0,0,0,.65);
+}
+
+.screen {
+  position: relative;
+  overflow: hidden;
+  background: var(--lcd);
+  border-radius: 16px;
+  padding: 10px 12px 10px 8px;
+  display: grid;
+  grid-template-columns: 40% 1fr;
+  gap: 4px;
+  box-shadow: inset 0 3px 12px rgba(0,0,0,.55), inset 0 -1px 0 rgba(255,255,255,.05);
+}
+.screen::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.09) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 30% 0%, rgba(255,255,255,.07), transparent 60%);
+}
+
+.seg { font-family: "DSEG7", "Nanum Gothic Coding", monospace; font-weight: 700; }
+
+.left { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+#horse { width: 100%; height: auto; display: block; overflow: visible; }
+.pct { color: var(--amber); font-size: 17px; margin-top: 2px; text-shadow: 0 0 6px var(--amber-glow); }
+.dist { color: var(--amber); font-size: 18px; text-shadow: 0 0 6px var(--amber-glow); display: flex; align-items: baseline; gap: 3px; }
+.dist small { font-family: "Do Hyeon"; font-size: 12px; opacity: .8; }
+.badge {
+  margin-top: 5px;
+  background: var(--orange); color: #fff;
+  font-size: 15px; line-height: 1;
+  padding: 5px 11px 4px; border-radius: 999px;
+  box-shadow: 0 0 10px rgba(238,106,36,.45);
+}
+
+.right { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; min-width: 0; }
+.speed { color: var(--amber); font-size: clamp(17px, 5.4vw, 23px); text-shadow: 0 0 6px var(--amber-glow); display: flex; align-items: baseline; gap: 4px; }
+.speed small { font-family: "Do Hyeon"; font-size: .75em; }
+
+.fare { display: flex; align-items: baseline; gap: 2px; color: var(--white); }
+.fare .digits { position: relative; font-size: clamp(32px, 10.4vw, 48px); line-height: 1.1; }
+.fare .ghost { color: rgba(255,255,255,.055); }
+.fare .val { position: absolute; right: 0; top: 0; text-shadow: 0 0 12px rgba(255,255,255,.35); }
+.fare em { font-style: normal; font-size: clamp(26px, 8vw, 38px); text-shadow: 0 0 10px rgba(255,255,255,.3); }
+.fare.bump .val { animation: bump .35s ease-out; }
+@keyframes bump { 0% { color: #fff7c9; text-shadow: 0 0 22px #fff3a0; } 100% { } }
+
+.call { color: var(--amber); display: flex; align-items: center; gap: 6px; font-size: clamp(20px, 6vw, 26px); text-shadow: 0 0 6px var(--amber-glow); }
+.call small { font-family: "Do Hyeon"; font-size: 12px; line-height: 1.05; color: #bdb8a9; text-shadow: none; text-align: left; }
+.call.editing .seg { animation: blink .7s steps(2, jump-none) infinite; }
+
+.modes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
+.modes button, .dlg-actions button {
+  position: relative;
+  color: var(--ink);
+  font-size: clamp(16px, 5vw, 20px);
+  padding: 9px 0 8px;
+  border-radius: 11px;
+  box-shadow: 0 3px 0 rgba(0,0,0,.55), inset 0 -3px 0 rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.7);
+  transition: transform .05s, box-shadow .05s;
+}
+.c1 { background: var(--c1); } .c2 { background: var(--c2); } .c3 { background: var(--c3); }
+.c4 { background: var(--c4); } .c5 { background: var(--c5); }
+.modes button:active, .modes button.on, .dlg-actions button:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(0,0,0,.55), inset 0 2px 4px rgba(0,0,0,.25);
+}
+.modes button.on::after {
+  content: ""; position: absolute; top: 4px; right: 5px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #ff3b24; box-shadow: 0 0 6px #ff3b24;
+}
+
+/* ---------- keypad ---------- */
+.pad {
+  background: linear-gradient(#1e1e1c, #111110);
+  border-radius: 22px;
+  padding: 16px 14px;
+  display: grid;
+  grid-template-columns: 40% 1fr;
+  gap: 14px;
+  box-shadow: inset 0 1px 0 #34332f, 0 14px 30px rgba(0,0,0,.6);
+}
+.fn { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-content: center; }
+.fn button, .num button {
+  background: linear-gradient(#383835, #2a2a28);
+  color: #e6e2d6;
+  border-radius: 7px;
+  box-shadow: 0 2px 0 #000, inset 0 1px 0 rgba(255,255,255,.1);
+}
+.fn button { font-size: 14px; padding: 8px 0; }
+.fn button.on { color: var(--amber); text-shadow: 0 0 6px var(--amber-glow); }
+.num { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.num button { font-size: 21px; padding: 6px 0 5px; }
+.num button.blank { visibility: visible; pointer-events: none; opacity: .55; }
+.fn button:active, .num button:active { transform: translateY(2px); box-shadow: 0 0 0 #000, inset 0 2px 3px rgba(0,0,0,.5); }
+
+/* ---------- status ---------- */
+.status {
+  display: flex; justify-content: space-between; gap: 8px;
+  font-family: "Nanum Gothic Coding", monospace; font-size: 12px;
+  color: #85827a; padding: 0 6px;
+}
+.status b { color: #c9c4b4; font-weight: 700; }
+#hint { text-align: right; }
+
+/* ---------- dialogs ---------- */
+dialog {
+  border: 0; padding: 0; background: transparent; color: var(--white);
+  max-width: min(440px, calc(100vw - 32px)); width: 100%;
+}
+dialog::backdrop { background: rgba(0,0,0,.78); backdrop-filter: blur(3px); }
+.dlg-body {
+  background: #1b1b1a; border-radius: 20px; padding: 16px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.7);
+  max-height: calc(100dvh - 40px); overflow: auto;
+}
+#receiptImg { display: block; width: 100%; max-height: 62dvh; object-fit: contain; border-radius: 6px; -webkit-touch-callout: default; -webkit-user-select: auto; }
+.tip { text-align: center; color: #85827a; font-size: 13px; margin: 10px 0 4px; }
+.dlg-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.info h2 { color: var(--amber); font-weight: 400; font-size: 20px; margin: 4px 0 10px; }
+.info table { width: 100%; border-collapse: collapse; font-family: "Nanum Gothic Coding", monospace; font-size: 13px; }
+.info th { text-align: left; color: var(--amber); font-weight: 700; padding: 5px 8px 5px 0; white-space: nowrap; vertical-align: top; }
+.info td { padding: 5px 0; color: #d9d4c6; border-bottom: 1px dashed #333; }
+.info p { font-family: "Nanum Gothic Coding", monospace; font-size: 12px; color: #9a968b; line-height: 1.55; }
+.info .dlg-actions { grid-template-columns: 1fr; }
+
+#toast {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 24px);
+  transform: translate(-50%, 20px); opacity: 0;
+  background: #f5c33b; color: #1a1a18; padding: 9px 16px; border-radius: 999px;
+  font-size: 15px; box-shadow: 0 8px 20px rgba(0,0,0,.5);
+  transition: opacity .2s, transform .2s; pointer-events: none; white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }

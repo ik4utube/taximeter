@@ -1,0 +1,16 @@
+{
+  "name": "필요없는 택시미터",
+  "short_name": "택시미터",
+  "description": "운전하면 진짜로 요금이 올라가는 택시미터",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0d0c",
+  "theme_color": "#0d0d0c",
+  "lang": "ko",
+  "icons": [
+    { "src": "icons/icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
