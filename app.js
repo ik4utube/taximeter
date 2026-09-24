@@ -687,19 +687,6 @@ $('#shareBtn').addEventListener('click', shareReceipt);
 $('#closeReceipt').addEventListener('click', () => $('#receiptDlg').close());
 $('#closeInfo').addEventListener('click', () => $('#infoDlg').close());
 
-/* ---------- 화면 비율 맞춤 ---------- */
-const DESIGN = { w: 393, h: 759 };
-function fitDevice() {
-  const st = $('.stage'), cs = getComputedStyle(st);
-  const w = st.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-  const h = st.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-  const s = Math.min(w / DESIGN.w, h / DESIGN.h, 1.4);
-  document.documentElement.style.setProperty('--s', s.toFixed(4));
-}
-addEventListener('resize', fitDevice);
-addEventListener('orientationchange', () => setTimeout(fitDevice, 200));
-fitDevice();
-
 /* ---------- boot ---------- */
 if (S.status === 'riding') {
   lastTick = Date.now();

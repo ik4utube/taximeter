@@ -7,7 +7,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="택시미터">
-  <meta name="theme-color" content="#0f0f0f">
+  <meta name="theme-color" content="#1f1f1d">
   <meta name="description" content="운전하면 진짜로 요금이 올라가는, 아무 필요 없는 택시미터">
   <title>필요없는 택시미터</title>
   <link rel="manifest" href="manifest.webmanifest">
@@ -19,7 +19,6 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="stage">
   <main class="device">
     <header class="plate">
       <span class="led" id="led"></span>
@@ -29,7 +28,7 @@
 
     <div class="screen">
       <div class="top">
-        <svg id="horse" viewBox="0 0 140 100" aria-label="달리는 말"></svg>
+        <svg id="horse" viewBox="0 0 140 100" preserveAspectRatio="xMinYMax meet" aria-label="달리는 말"></svg>
         <div class="side">
           <div class="speed"><span class="seg" id="speed">0.0</span><small>km/h</small></div>
           <div class="pct"><small>할증</small><span class="seg" id="pct">0</span><small>%</small></div>
@@ -69,7 +68,6 @@
       <button data-act="print">인쇄</button>
     </div>
   </main>
-  </div>
 
   <dialog id="receiptDlg">
     <div class="dlg-body">

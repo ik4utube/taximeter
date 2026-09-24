@@ -1,4 +1,4 @@
-const CACHE = 'taximeter-v5';
+const CACHE = 'taximeter-v6';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
