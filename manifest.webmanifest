@@ -1,7 +1,7 @@
 {
-  "name": "필요없는 택시미터",
+  "name": "달리는 말 택시미터",
   "short_name": "택시미터",
-  "description": "운전하면 진짜로 요금이 올라가는 택시미터",
+  "description": "운전하면 진짜로 요금이 올라가는, 달리는 말 택시조합의 택시미터",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
