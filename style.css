@@ -37,7 +37,9 @@ body {
 
 /* 아이폰 계산기처럼: 화면 끝까지 본체, 키패드는 아래에 고정 크기, 남는 높이는 디스플레이가 차지 */
 .device {
-  width: 100%; max-width: 480px; height: 100dvh;
+  --dw: min(100vw, 480px);   /* 기기 너비 */
+  --dh: 100dvh;              /* 기기 높이 */
+  width: 100%; max-width: 480px; height: var(--dh);
   margin: 0 auto;
   display: flex; flex-direction: column; gap: 12px;
   padding: calc(env(safe-area-inset-top) + 8px) 16px max(env(safe-area-inset-bottom), 16px);
@@ -47,7 +49,9 @@ body {
 @media (min-width: 560px) {
   body { display: grid; place-items: center; background: radial-gradient(ellipse at 50% -20%, #2c2b28 0%, #0d0d0c 65%) fixed, var(--bg); }
   .device {
-    width: 420px; height: min(100dvh - 40px, 880px);
+    --dw: 393px;                          /* 아이폰 15/16 비율 그대로 */
+    --dh: min(100dvh - 40px, 852px);
+    width: var(--dw); height: var(--dh);
     padding: 16px 16px 18px;
     border-radius: 36px;
     background: linear-gradient(175deg, #252523 0%, #1a1a18 50%, #111110 100%);
@@ -93,22 +97,22 @@ button { font: inherit; cursor: pointer; border: 0; touch-action: manipulation; 
 .seg { font-family: "DSEG7", "Nanum Gothic Coding", monospace; font-weight: 700; }
 .amber { color: var(--amber); text-shadow: 0 0 6px var(--amber-glow); }
 
-.top { flex: 1; min-height: 0; display: flex; align-items: stretch; gap: 6px; }
+.top { flex: 1; min-height: 0; display: flex; align-items: center; gap: 6px; container-type: size; }
 #horse {
-  flex: none; width: 58cqw; height: 100%; max-height: 42cqw;
+  flex: none; width: min(56cqw, 130cqh); height: auto;
   display: block; overflow: visible;
   filter: drop-shadow(0 0 5px rgba(245,195,59,.3));
 }
 .side {
-  flex: 1; align-self: stretch;
+  flex: 1; align-self: stretch; min-width: 0;
   display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between;
   padding: 2px 0 4px;
   color: var(--amber); text-shadow: 0 0 6px var(--amber-glow);
 }
-.side small { font-family: "Do Hyeon"; font-size: 3.4cqw; opacity: .85; }
+.side small { font-family: "Do Hyeon"; font-size: min(3.4cqw, 11cqh); opacity: .85; }
 .speed, .pct, .dist { display: flex; align-items: baseline; gap: 4px; }
-.speed { font-size: 6.4cqw; }
-.pct, .dist { font-size: 5.2cqw; }
+.speed { font-size: min(6.4cqw, 19cqh); }
+.pct, .dist { font-size: min(5.2cqw, 15cqh); }
 
 .fare {
   flex: none;
@@ -161,7 +165,11 @@ button { font: inherit; cursor: pointer; border: 0; touch-action: manipulation; 
   flex: none;
   display: grid; gap: 10px;
   grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(4, clamp(50px, calc((min(100vw, 480px) - 52px) / 5.3), 68px));
+  /* 너비 기준 크기, 단 화면이 짧으면 디스플레이 몫(약 250px)을 남기도록 높이 기준으로 줄임 */
+  grid-template-rows: repeat(4, clamp(44px, min(
+    calc((var(--dw) - 52px) / 5.3),
+    calc((var(--dh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 510px) / 4)
+  ), 68px));
   padding-top: 12px;
   border-top: 1px solid #0b0b0a;
   box-shadow: inset 0 1px 0 #34332f;
@@ -184,14 +192,12 @@ button { font: inherit; cursor: pointer; border: 0; touch-action: manipulation; 
 /* 짧은 화면(SE, Safari 주소창 표시 중): 키패드·간격을 줄여 디스플레이 공간 확보 */
 @media (max-height: 700px) {
   .device { gap: 9px; }
-  .num { grid-template-rows: repeat(4, clamp(44px, 8.2dvh, 56px)); gap: 8px; padding-top: 9px; }
+  .num { gap: 8px; padding-top: 9px; }
   .fn { padding-top: 9px; }
   .fn button { height: 38px; }
   .modes button { padding: 7px 0 6px; }
   .fare .digits { font-size: 15.5cqw; }
   .fare em { font-size: 9cqw; }
-  .speed { font-size: 5.4cqw; }
-  .pct, .dist { font-size: 4.4cqw; }
 }
 .fn button.on { color: var(--amber); text-shadow: 0 0 6px var(--amber-glow); }
 .num button { font-size: 30px; }

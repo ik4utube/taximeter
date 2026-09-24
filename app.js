@@ -698,5 +698,17 @@ render();
 setInterval(tick, 1000);
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+    // 앱으로 돌아올 때마다 새 버전 확인
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') reg.update().catch(() => {});
+    });
+  }).catch(() => {});
+  // 새 버전이 설치되면 한 번 새로고침 (주행 상태는 저장돼 있어 이어짐)
+  if (navigator.serviceWorker.controller) {
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!reloaded) { reloaded = true; location.reload(); }
+    });
+  }
 }
