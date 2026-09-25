@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 택시미터 본체색 (style.css의 body 배경과 같은 계열) -->
+    <color name="meterBody">#1a1a18</color>
+</resources>

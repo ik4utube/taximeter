@@ -14,6 +14,8 @@ const FARE = {
 
 const $ = (s) => document.querySelector(s);
 const STORE = 'taximeter.v1';
+// 안드로이드 앱(Capacitor) 안에서 실행 중인지
+const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 
 function nightPct(d) {
   const h = d.getHours();
@@ -408,6 +410,7 @@ const Horse = (() => {
  * 영수증 (이미지)
  * ========================================================= */
 let receiptBlob = null;
+let receiptBlobReady = Promise.resolve();
 
 const fmtDate = (ms) => {
   const d = new Date(ms), z = (n) => String(n).padStart(2, '0');
@@ -554,15 +557,32 @@ async function drawReceiptHorse(g, x, y, w, ink) {
 
 async function showReceipt() {
   const cv = await drawReceipt();
-  receiptBlob = await new Promise((r) => cv.toBlob(r, 'image/png'));
-  $('#receiptImg').src = cv.toDataURL('image/png');
+  // toBlob은 안드로이드 WebView에서 수 초씩 걸려서, 빠른 toDataURL로 먼저 보여 줌
+  const url = cv.toDataURL('image/png');
+  $('#receiptImg').src = url;
   const dlg = $('#receiptDlg');
   if (!dlg.open) dlg.showModal();
+  // 웹 공유용 파일은 뒤에서 미리 만들어 둠 (공유 버튼을 누른 순간 바로 쓰도록)
+  receiptBlob = null;
+  receiptBlobReady = fetch(url).then((r) => r.blob()).then((b) => (receiptBlob = b));
 }
 
 async function shareReceipt() {
-  if (!receiptBlob) return;
+  if (!$('#receiptImg').src) return;
   const name = `taxi-receipt-${fmtDate(S.end).replace(/[.: ]/g, '')}.png`;
+  if (NATIVE) {
+    // 앱 안에서는 웹 공유가 없으므로 캐시에 PNG로 저장한 뒤 안드로이드 공유 창을 띄움
+    const { Filesystem, Share } = window.Capacitor.Plugins;
+    try {
+      const data = $('#receiptImg').src.split(',')[1];
+      const { uri } = await Filesystem.writeFile({ path: name, data, directory: 'CACHE' });
+      await Share.share({ title: '택시 영수증', files: [uri] });
+    } catch (e) {
+      if (!/cancel/i.test(String(e && e.message))) toast('공유하지 못했어요');
+    }
+    return;
+  }
+  if (!receiptBlob) await receiptBlobReady;
   const file = new File([receiptBlob], name, { type: 'image/png' });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try { await navigator.share({ files: [file], title: '택시 영수증' }); } catch { /* 취소 */ }
@@ -589,7 +609,13 @@ if (S.awake) wake();
 render();
 setInterval(tick, 1000);
 
-if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+// 서비스 워커는 웹(PWA)에서만. 앱에는 파일이 이미 들어 있으므로 예전에 등록된 것도 지움
+if (NATIVE && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations()
+    .then((regs) => regs.forEach((r) => r.unregister()))
+    .catch(() => {});
+}
+if ('serviceWorker' in navigator && location.protocol !== 'file:' && !NATIVE) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
     // 앱으로 돌아올 때마다 새 버전 확인
     document.addEventListener('visibilitychange', () => {

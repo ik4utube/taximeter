@@ -1,0 +1,15 @@
+{
+  "appId": "io.github.ik4utube.taximeter",
+  "appName": "택시미터",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#1a1a18"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "native",
+      "initialViewportFitValueHint": "cover",
+      "style": "DARK"
+    }
+  }
+}

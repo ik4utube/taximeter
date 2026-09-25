@@ -42,6 +42,22 @@ python -m http.server 8123
 ```
 http://localhost:8123 접속 (위치 기능은 localhost 또는 HTTPS에서만 동작)
 
+## 안드로이드 앱 (Capacitor)
+
+같은 웹 코드를 [Capacitor](https://capacitorjs.com) 8로 감싸 안드로이드 앱으로 만듭니다.
+
+준비물: Android Studio, Node.js 22 이상, JDK 21 (Android Studio → Gradle JDK에서 21 선택)
+
+```bash
+npm install          # 처음 한 번
+npm run sync         # 웹 파일을 www/로 모으고 android/에 반영
+npm run android      # sync 후 Android Studio로 열기 → ▶ Run
+```
+
+- 앱 ID: `io.github.ik4utube.taximeter`, 앱 이름: 택시미터
+- 앱 안에서는 서비스 워커를 쓰지 않고, 영수증 공유는 안드로이드 공유 창(`@capacitor/share`)을 사용
+- 위치 권한은 `android/app/src/main/AndroidManifest.xml`에 선언
+
 ## 구조
 
 ```
