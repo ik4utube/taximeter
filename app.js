@@ -333,16 +333,99 @@ function toast(msg) {
 }
 
 /* =========================================================
- * 달리는 말 — Eadweard Muybridge, "The Horse in Motion"(1878, 퍼블릭 도메인)
- * 실사 연속 사진 11장(습보 한 보폭) + 서 있는 사진 1장을 실루엣으로 만든 프레임 (기수는 지움)
+ * 달리는 말 — LCD 계기판 아이콘 스타일 (가는 윤곽선으로만 그린 벡터 그림)
+ * 실제 택시 미터기의 "달리는 말" 표시등에서 착안한 원본 디자인.
+ * 다리는 실제 습보(gallop) 보폭을 8단계 키프레임으로 보간.
+ * 각도: 0 = 수직, + = 뒤쪽(말은 왼쪽을 봄). [윗다리, 아랫다리] 절대각
  * ========================================================= */
-const HORSE_FRAMES = Array.from({ length: 12 }, (_, i) => `img/horse-${String(i + 1).padStart(2, '0')}.png`);
-const GALLOP_COUNT = 11;       // 1~11: 달리는 동작, 12: 서 있는 모습
-const STAND = 11;              // 0부터 센 인덱스
-const HORSE_BOX = { x: 2, y: 12, w: 136, h: 86.8 };  // 프레임(293×187) 비율 그대로
+const HORSE = {
+  body:
+    'M52 34C62 37 76 37 88 34C96 31 104 32 108 38C112 44 111 54 106 60' +
+    'C103 64 98 66 95 66C86 68 72 70 62 68C55 67 50 66 47 63C42 58 41 48 44 42C46 38 49 35 52 34Z',
+  neck:
+    'M46 50C41 41 36 33 31 28C28 29 25 31 22 33L14 36C10 37 8 34 9 31L19 19' +
+    'C21 16 24 14 27 14L29 7.5L32.5 14C40 19 49 27 58 36L55 50Z',
+  neckPivot: [52, 44],
+  // 다리는 굵은 단일 선(폴리라인)으로: [다리 두께, 발굽 끝 두께]
+  front: { hip: [50, 61.5], L: [16, 15], w: [2.6, 1.5] },
+  rear: { hip: [100, 56.5], L: [18, 19], w: [3.2, 1.7] },
+  ground: 96,
+};
 
-// 미리 불러 두어 프레임 전환 시 깜빡임 방지
-const horseImages = HORSE_FRAMES.map((src) => { const im = new Image(); im.src = src; return im; });
+const GALLOP_KEYS = {
+  front: [[-0.45, -0.45], [-0.12, -0.12], [0.25, 0.3], [0.42, 1.1],
+          [0.15, 1.85], [-0.35, 1.5], [-0.7, 0.3], [-0.65, -0.4]],
+  rear:  [[-0.25, -0.35], [0, -0.1], [0.3, 0.2], [0.55, 0.55],
+          [0.55, -0.1], [0.25, -0.8], [-0.1, -0.9], [-0.3, -0.6]],
+};
+const REST = { front: [0.02, 0.02], rear: [0.25, 0] };
+// 다리별 위상 차. 습보: 뒷다리 두 개 → 앞다리 두 개 → 공중 부양 / 평보: 4박자
+const GAIT = {
+  gallop: { nearRear: 0, farRear: 0.09, farFront: 0.24, nearFront: 0.33 },
+  walk: { nearRear: 0, nearFront: 0.25, farRear: 0.5, farFront: 0.75 },
+};
+
+/** 순환 Catmull-Rom 보간 */
+function sampleKeys(keys, t) {
+  const n = keys.length;
+  const x = (((t % 1) + 1) % 1) * n, i = Math.floor(x), f = x - i;
+  const p = (k) => keys[(i + k + n) % n];
+  return [0, 1].map((j) => {
+    const a = p(-1)[j], b = p(0)[j], c = p(1)[j], d = p(2)[j];
+    return b + 0.5 * f * (c - a + f * (2 * a - 5 * b + 4 * c - d + f * (3 * (b - c) + d - a)));
+  });
+}
+
+const n1 = (v) => v.toFixed(1);
+/** 엉덩이 → 무릎 → 발굽을 잇는 단일 굵은 선(폴리라인)과, 발굽 끝의 짧은 발끝 선을 따로 반환한다.
+ *  둥근 선이음(stroke-linejoin: round)이 무릎에서 자연스럽게 꺾이므로 관절 표시가 따로 필요 없다. */
+function legShape(spec, a1, a2) {
+  const [hx, hy] = spec.hip, [L1, L2] = spec.L;
+  const kx = hx + L1 * Math.sin(a1), ky = hy + L1 * Math.cos(a1);
+  const fx = kx + L2 * Math.sin(a2), fy = ky + L2 * Math.cos(a2);
+  const a3 = a2 - 0.35;
+  const tx = fx + 3.6 * Math.sin(a3), ty = fy + 3.6 * Math.cos(a3);
+  return {
+    leg: `M${n1(hx)} ${n1(hy)}L${n1(kx)} ${n1(ky)}L${n1(fx)} ${n1(fy)}`,
+    hoof: `M${n1(fx)} ${n1(fy)}L${n1(tx)} ${n1(ty)}`,
+    low: Math.max(ty, fy),
+  };
+}
+
+/** t: 보폭 위상(0~1 반복), amp: 동작 크기(0 = 서 있음), gallop: 습보 비중(0 = 평보) */
+function horsePose(t, amp, gallop) {
+  const TAU = Math.PI * 2;
+  const leg = (kind, name) => {
+    const gk = sampleKeys(GALLOP_KEYS[kind], t - GAIT.gallop[name]);
+    const wk = sampleKeys(GALLOP_KEYS[kind], t - GAIT.walk[name]);
+    const r = REST[kind];
+    return [0, 1].map((j) => {
+      const walk = r[j] + 0.42 * (wk[j] - r[j]);
+      const mix = walk + (gk[j] - walk) * gallop;
+      return r[j] + (mix - r[j]) * amp;
+    });
+  };
+  const legs = {};
+  for (const [name, kind] of [['farRear', 'rear'], ['farFront', 'front'], ['nearRear', 'rear'], ['nearFront', 'front']]) {
+    const [a1, a2] = leg(kind, name);
+    legs[name] = legShape(HORSE[kind], a1, a2);
+  }
+  // 발굽이 땅을 뚫지 않도록 몸을 들어 올리고, 습보의 공중 부양 구간엔 살짝 뜀
+  const lowest = Math.max(...Object.values(legs).map((l) => l.low));
+  const u = (((t - 0.62) % 1) + 1) % 1;
+  const flight = u < 0.4 ? gallop * amp * 2.2 * Math.sin(Math.PI * u / 0.4) : 0;
+  const dy = Math.min(0, HORSE.ground - lowest) - flight;
+  const pitch = amp * (gallop * 2.4 * Math.sin(TAU * (t - 0.3)) + (1 - gallop) * 0.8 * Math.sin(TAU * 2 * t));
+  const neck = amp * (gallop * 7 * Math.sin(TAU * (t - 0.1)) + (1 - gallop) * 3 * Math.sin(TAU * 2 * (t + 0.1)));
+  const lift = amp * (0.35 + 0.65 * gallop);
+  const wave = Math.sin(TAU * t * 2) * lift;
+  const tail = `M106 38Q${n1(116 + 8 * lift)} ${n1(46 - 10 * lift + wave * 2)} ${n1(111 + 22 * lift)} ${n1(72 - 26 * lift + wave * 4)}`;
+  const m = 4 * lift, mw = Math.sin(TAU * t * 2 + 1) * 1.5 * lift;
+  const mane = [[33, 15], [39, 19], [45, 24], [51, 30]]
+    .map(([x, y], i) => `M${x} ${y}Q${n1(x + 4 + m)} ${n1(y + 1 + mw)} ${n1(x + 7 + m * 1.4)} ${n1(y - 1 + mw * (1 + i * 0.2))}`)
+    .join('');
+  return { legs, dy, pitch, neck, tail, mane };
+}
 
 const Horse = (() => {
   const NS = 'http://www.w3.org/2000/svg';
@@ -354,16 +437,32 @@ const Horse = (() => {
     return node;
   };
   const AMB = '#f5c33b';
+  const STROKE = { fill: 'none', stroke: AMB, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' };
 
-  // 흰 실루엣 PNG를 마스크로 써서 LCD 호박색으로 칠함
-  const defs = el('defs', {});
-  const mask = el('mask', { id: 'horseMask', maskUnits: 'userSpaceOnUse', x: 0, y: 10, width: 140, height: 90 }, defs);
-  const img = el('image', { href: HORSE_FRAMES[STAND], x: HORSE_BOX.x, y: HORSE_BOX.y, width: HORSE_BOX.w, height: HORSE_BOX.h }, mask);
-  const road = el('path', { d: 'M-10 98.5H150', fill: 'none', stroke: AMB, 'stroke-width': 1.4, 'stroke-dasharray': '8 8', opacity: 0.4 });
+  const road = el('path', { d: 'M-10 97.5H150', fill: 'none', stroke: AMB, 'stroke-width': 1.4, 'stroke-dasharray': '8 8', opacity: 0.4 });
   const dustG = el('g', { fill: AMB });
-  el('rect', { x: 0, y: 10, width: 140, height: 90, fill: AMB, mask: 'url(#horseMask)' });
+  const body = el('g', {});
 
-  let phase = 0, shown = STAND, roadOff = 0, last = performance.now();
+  // 반대편(먼 쪽) 다리: 얇고 옅게 그려서 안쪽으로 물러난 느낌을 줌
+  const [fw0, fw1] = HORSE.front.w, [rw0, rw1] = HORSE.rear.w;
+  const farRearL = el('path', { ...STROKE, 'stroke-width': rw0 * 0.75, opacity: 0.4 }, body);
+  const farRearH = el('path', { ...STROKE, 'stroke-width': rw1 * 0.75, opacity: 0.4 }, body);
+  const farFrontL = el('path', { ...STROKE, 'stroke-width': fw0 * 0.75, opacity: 0.4 }, body);
+  const farFrontH = el('path', { ...STROKE, 'stroke-width': fw1 * 0.75, opacity: 0.4 }, body);
+
+  const tail = el('path', { ...STROKE, 'stroke-width': 3.4 }, body);
+  el('path', { d: HORSE.body, ...STROKE, 'stroke-width': 2.3 }, body);
+
+  const neckG = el('g', {}, body);
+  const mane = el('path', { ...STROKE, 'stroke-width': 2.2 }, neckG);
+  el('path', { d: HORSE.neck, ...STROKE, 'stroke-width': 2.3 }, neckG);
+
+  const nearRearL = el('path', { ...STROKE, 'stroke-width': rw0 }, body);
+  const nearRearH = el('path', { ...STROKE, 'stroke-width': rw1 }, body);
+  const nearFrontL = el('path', { ...STROKE, 'stroke-width': fw0 }, body);
+  const nearFrontH = el('path', { ...STROKE, 'stroke-width': fw1 }, body);
+
+  let t = 0, amp = 0, gallop = 0, roadOff = 0, last = performance.now();
   const dust = [];
 
   function frame(now) {
@@ -371,23 +470,31 @@ const Horse = (() => {
     last = now;
     const kmh = speed * 3.6;
 
-    // 속도가 빠를수록 사진을 빨리 넘김 (5km/h ≈ 초당 6장, 60km/h ≈ 초당 18장)
-    let next = STAND;
-    if (kmh >= 0.5) {
-      phase = (phase + (5 + Math.min(kmh, 100) * 0.22) * dt) % GALLOP_COUNT;
-      next = Math.floor(phase);
-    }
-    if (next !== shown) {
-      img.setAttribute('href', HORSE_FRAMES[next]);
-      shown = next;
-    }
+    // 속도 → 동작 크기, 걸음새(평보↔습보), 보폭 빈도
+    const moving = kmh >= 0.5;
+    amp += ((moving ? Math.min(1, 0.55 + kmh / 30) : 0) - amp) * Math.min(1, dt * 4);
+    const gTarget = Math.min(1, Math.max(0, (kmh - 12) / 13));
+    gallop += (gTarget - gallop) * Math.min(1, dt * 2.5);
+    const freq = moving ? 0.75 + 1.05 * gallop + Math.min(kmh, 110) * 0.006 : 0;
+    t += freq * dt;
+    if (!moving) t += (Math.round(t) - t) * Math.min(1, dt * 3);
+
+    const p = horsePose(t, amp, gallop);
+    farRearL.setAttribute('d', p.legs.farRear.leg); farRearH.setAttribute('d', p.legs.farRear.hoof);
+    farFrontL.setAttribute('d', p.legs.farFront.leg); farFrontH.setAttribute('d', p.legs.farFront.hoof);
+    nearRearL.setAttribute('d', p.legs.nearRear.leg); nearRearH.setAttribute('d', p.legs.nearRear.hoof);
+    nearFrontL.setAttribute('d', p.legs.nearFront.leg); nearFrontH.setAttribute('d', p.legs.nearFront.hoof);
+    tail.setAttribute('d', p.tail);
+    mane.setAttribute('d', p.mane);
+    neckG.setAttribute('transform', `rotate(${p.neck.toFixed(2)} ${HORSE.neckPivot.join(' ')})`);
+    body.setAttribute('transform', `translate(0 ${p.dy.toFixed(2)}) rotate(${p.pitch.toFixed(2)} 78 52)`);
 
     roadOff = (roadOff + kmh * dt * 1.6) % 16;
     road.setAttribute('stroke-dashoffset', (-roadOff).toFixed(1));
 
-    // 흙먼지 (뒷발 쪽)
+    // 흙먼지
     if (kmh > 20 && Math.random() < dt * kmh / 7) {
-      dust.push({ x: 104 + Math.random() * 16, y: 96, r: 1, life: 1 });
+      dust.push({ x: 96 + Math.random() * 14, y: 95, r: 1, life: 1 });
     }
     while (dustG.childNodes.length < dust.length) el('circle', {}, dustG);
     for (let i = dust.length - 1; i >= 0; i--) {
@@ -519,7 +626,7 @@ async function drawReceipt() {
       g.font = '28px DSEG7, monospace';
       g.fillText(String(total()), X1 - wW - 6, mid);
     } else if (type === 'horse') {
-      await drawReceiptHorse(g, CX - 52, y + 4, 104, INK);
+      drawReceiptHorse(g, CX - 52, y - 2, 0.78, INK);
     } else if (type === 'barcode') {
       let x = X0 + 20, seed = S.start % 997;
       while (x < X1 - 20) {
@@ -540,19 +647,36 @@ async function drawReceipt() {
 }
 
 /** 영수증용: 달리는 프레임 하나를 잉크색으로 칠해서 그림 */
-async function drawReceiptHorse(g, x, y, w, ink) {
-  const im = horseImages[6];
-  if (!im.complete) await new Promise((r) => { im.onload = r; im.onerror = r; });
-  if (!im.naturalWidth) return;
-  const h = w * im.naturalHeight / im.naturalWidth;
-  const off = document.createElement('canvas');
-  off.width = im.naturalWidth; off.height = im.naturalHeight;
-  const o = off.getContext('2d');
-  o.drawImage(im, 0, 0);
-  o.globalCompositeOperation = 'source-in';
-  o.fillStyle = ink;
-  o.fillRect(0, 0, off.width, off.height);
-  g.drawImage(off, x, y, w, h);
+async /** 영수증용: 질주 자세 하나를 잉크색 윤곽선으로 그림 (화면과 같은 스타일) */
+function drawReceiptHorse(g, x, y, s, ink) {
+  const p = horsePose(0.45, 1, 1);
+  g.save();
+  g.translate(x, y); g.scale(s, s);
+  g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = ink; g.fillStyle = ink;
+
+  const [fw0, fw1] = HORSE.front.w, [rw0, rw1] = HORSE.rear.w;
+  g.globalAlpha = 0.4;
+  g.lineWidth = rw0 * 0.75; g.stroke(new Path2D(p.legs.farRear.leg));
+  g.lineWidth = rw1 * 0.75; g.stroke(new Path2D(p.legs.farRear.hoof));
+  g.lineWidth = fw0 * 0.75; g.stroke(new Path2D(p.legs.farFront.leg));
+  g.lineWidth = fw1 * 0.75; g.stroke(new Path2D(p.legs.farFront.hoof));
+  g.globalAlpha = 1;
+
+  g.lineWidth = 3.4; g.stroke(new Path2D(p.tail));
+  g.lineWidth = 2.3; g.stroke(new Path2D(HORSE.body));
+
+  const [px, py] = HORSE.neckPivot;
+  g.save();
+  g.translate(px, py); g.rotate(p.neck * Math.PI / 180); g.translate(-px, -py);
+  g.lineWidth = 2.2; g.stroke(new Path2D(p.mane));
+  g.lineWidth = 2.3; g.stroke(new Path2D(HORSE.neck));
+  g.restore();
+
+  g.lineWidth = rw0; g.stroke(new Path2D(p.legs.nearRear.leg));
+  g.lineWidth = rw1; g.stroke(new Path2D(p.legs.nearRear.hoof));
+  g.lineWidth = fw0; g.stroke(new Path2D(p.legs.nearFront.leg));
+  g.lineWidth = fw1; g.stroke(new Path2D(p.legs.nearFront.hoof));
+  g.restore();
 }
 
 async function showReceipt() {
