@@ -333,11 +333,6 @@ function toast(msg) {
 }
 
 /* =========================================================
- * 달리는 말 — LCD 계기판 아이콘 스타일 (가는 윤곽선으로만 그린 벡터 그림)
- * 실제 택시 미터기의 "달리는 말" 표시등에서 착안한 원본 디자인.
- * 다리는 실제 습보(gallop) 보폭을 8단계 키프레임으로 보간.
- * 각도: 0 = 수직, + = 뒤쪽(말은 왼쪽을 봄). [윗다리, 아랫다리] 절대각
- * ========================================================= */
 const HORSE = {
   body:
     'M52 34C62 37 76 37 88 34C96 31 104 32 108 38C112 44 111 54 106 60' +
@@ -346,9 +341,8 @@ const HORSE = {
     'M46 50C41 41 36 33 31 28C28 29 25 31 22 33L14 36C10 37 8 34 9 31L19 19' +
     'C21 16 24 14 27 14L29 7.5L32.5 14C40 19 49 27 58 36L55 50Z',
   neckPivot: [52, 44],
-  // 다리는 굵은 단일 선(폴리라인)으로: [다리 두께, 발굽 끝 두께]
-  front: { hip: [50, 61.5], L: [16, 15], w: [2.6, 1.5] },
-  rear: { hip: [100, 56.5], L: [18, 19], w: [3.2, 1.7] },
+  front: { hip: [50, 61.5], L: [16, 15], w: [8, 3.8, 3.2, 2.6] },
+  rear: { hip: [100, 56.5], L: [18, 19], w: [12, 4, 3.3, 2.7] },
   ground: 96,
 };
 
@@ -377,17 +371,26 @@ function sampleKeys(keys, t) {
 }
 
 const n1 = (v) => v.toFixed(1);
-/** 엉덩이 → 무릎 → 발굽을 잇는 단일 굵은 선(폴리라인)과, 발굽 끝의 짧은 발끝 선을 따로 반환한다.
- *  둥근 선이음(stroke-linejoin: round)이 무릎에서 자연스럽게 꺾이므로 관절 표시가 따로 필요 없다. */
+function segPath(x0, y0, x1, y1, w0, w1) {
+  const l = Math.hypot(x1 - x0, y1 - y0) || 1;
+  const nx = -(y1 - y0) / l, ny = (x1 - x0) / l;
+  return `M${n1(x0 + nx * w0 / 2)} ${n1(y0 + ny * w0 / 2)}L${n1(x1 + nx * w1 / 2)} ${n1(y1 + ny * w1 / 2)}` +
+    `L${n1(x1 - nx * w1 / 2)} ${n1(y1 - ny * w1 / 2)}L${n1(x0 - nx * w0 / 2)} ${n1(y0 - ny * w0 / 2)}Z`;
+}
+function dotPath(x, y, r) {
+  return `M${n1(x - r)} ${n1(y)}a${r} ${r} 0 1 0 ${n1(2 * r)} 0a${r} ${r} 0 1 0 ${n1(-2 * r)} 0Z`;
+}
+/** 허벅지(굵음) → 정강이(가늚) → 발굽을 채워진 도형 하나로 */
 function legShape(spec, a1, a2) {
-  const [hx, hy] = spec.hip, [L1, L2] = spec.L;
+  const [hx, hy] = spec.hip, [L1, L2] = spec.L, [w0, w1, w2, w3] = spec.w;
   const kx = hx + L1 * Math.sin(a1), ky = hy + L1 * Math.cos(a1);
   const fx = kx + L2 * Math.sin(a2), fy = ky + L2 * Math.cos(a2);
   const a3 = a2 - 0.35;
   const tx = fx + 3.6 * Math.sin(a3), ty = fy + 3.6 * Math.cos(a3);
   return {
-    leg: `M${n1(hx)} ${n1(hy)}L${n1(kx)} ${n1(ky)}L${n1(fx)} ${n1(fy)}`,
-    hoof: `M${n1(fx)} ${n1(fy)}L${n1(tx)} ${n1(ty)}`,
+    d: segPath(hx, hy, kx, ky, w0, w1) + dotPath(kx, ky, w1 / 2 + 0.4) +
+       segPath(kx, ky, fx, fy, w2, w3) + dotPath(fx, fy, w3 / 2 + 0.3) +
+       segPath(fx, fy, tx, ty, w3 + 0.4, 4.6),
     low: Math.max(ty, fy),
   };
 }
@@ -436,31 +439,20 @@ const Horse = (() => {
     parent.appendChild(node);
     return node;
   };
-  const AMB = '#f5c33b';
-  const STROKE = { fill: 'none', stroke: AMB, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' };
+  const AMB = '#f5c33b', FAR = '#a3801f', LCD = '#3a3c39';
 
   const road = el('path', { d: 'M-10 97.5H150', fill: 'none', stroke: AMB, 'stroke-width': 1.4, 'stroke-dasharray': '8 8', opacity: 0.4 });
   const dustG = el('g', { fill: AMB });
   const body = el('g', {});
-
-  // 반대편(먼 쪽) 다리: 얇고 옅게 그려서 안쪽으로 물러난 느낌을 줌
-  const [fw0, fw1] = HORSE.front.w, [rw0, rw1] = HORSE.rear.w;
-  const farRearL = el('path', { ...STROKE, 'stroke-width': rw0 * 0.75, opacity: 0.4 }, body);
-  const farRearH = el('path', { ...STROKE, 'stroke-width': rw1 * 0.75, opacity: 0.4 }, body);
-  const farFrontL = el('path', { ...STROKE, 'stroke-width': fw0 * 0.75, opacity: 0.4 }, body);
-  const farFrontH = el('path', { ...STROKE, 'stroke-width': fw1 * 0.75, opacity: 0.4 }, body);
-
-  const tail = el('path', { ...STROKE, 'stroke-width': 3.4 }, body);
-  el('path', { d: HORSE.body, ...STROKE, 'stroke-width': 2.3 }, body);
-
+  const farRear = el('path', { fill: FAR }, body);
+  const farFront = el('path', { fill: FAR }, body);
+  const tail = el('path', { fill: 'none', stroke: AMB, 'stroke-width': 4.5, 'stroke-linecap': 'round' }, body);
+  el('path', { d: HORSE.body, fill: AMB }, body);
   const neckG = el('g', {}, body);
-  const mane = el('path', { ...STROKE, 'stroke-width': 2.2 }, neckG);
-  el('path', { d: HORSE.neck, ...STROKE, 'stroke-width': 2.3 }, neckG);
-
-  const nearRearL = el('path', { ...STROKE, 'stroke-width': rw0 }, body);
-  const nearRearH = el('path', { ...STROKE, 'stroke-width': rw1 }, body);
-  const nearFrontL = el('path', { ...STROKE, 'stroke-width': fw0 }, body);
-  const nearFrontH = el('path', { ...STROKE, 'stroke-width': fw1 }, body);
+  const mane = el('path', { fill: 'none', stroke: AMB, 'stroke-width': 2.4, 'stroke-linecap': 'round' }, neckG);
+  el('path', { d: HORSE.neck, fill: AMB }, neckG);
+  const nearRear = el('path', { fill: AMB }, body);
+  const nearFront = el('path', { fill: AMB }, body);
 
   let t = 0, amp = 0, gallop = 0, roadOff = 0, last = performance.now();
   const dust = [];
@@ -480,10 +472,10 @@ const Horse = (() => {
     if (!moving) t += (Math.round(t) - t) * Math.min(1, dt * 3);
 
     const p = horsePose(t, amp, gallop);
-    farRearL.setAttribute('d', p.legs.farRear.leg); farRearH.setAttribute('d', p.legs.farRear.hoof);
-    farFrontL.setAttribute('d', p.legs.farFront.leg); farFrontH.setAttribute('d', p.legs.farFront.hoof);
-    nearRearL.setAttribute('d', p.legs.nearRear.leg); nearRearH.setAttribute('d', p.legs.nearRear.hoof);
-    nearFrontL.setAttribute('d', p.legs.nearFront.leg); nearFrontH.setAttribute('d', p.legs.nearFront.hoof);
+    farRear.setAttribute('d', p.legs.farRear.d);
+    farFront.setAttribute('d', p.legs.farFront.d);
+    nearRear.setAttribute('d', p.legs.nearRear.d);
+    nearFront.setAttribute('d', p.legs.nearFront.d);
     tail.setAttribute('d', p.tail);
     mane.setAttribute('d', p.mane);
     neckG.setAttribute('transform', `rotate(${p.neck.toFixed(2)} ${HORSE.neckPivot.join(' ')})`);
@@ -512,6 +504,7 @@ const Horse = (() => {
   }
   requestAnimationFrame(frame);
 })();
+
 
 /* =========================================================
  * 영수증 (이미지)
@@ -652,30 +645,18 @@ function drawReceiptHorse(g, x, y, s, ink) {
   const p = horsePose(0.45, 1, 1);
   g.save();
   g.translate(x, y); g.scale(s, s);
-  g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = ink; g.fillStyle = ink;
-
-  const [fw0, fw1] = HORSE.front.w, [rw0, rw1] = HORSE.rear.w;
-  g.globalAlpha = 0.4;
-  g.lineWidth = rw0 * 0.75; g.stroke(new Path2D(p.legs.farRear.leg));
-  g.lineWidth = rw1 * 0.75; g.stroke(new Path2D(p.legs.farRear.hoof));
-  g.lineWidth = fw0 * 0.75; g.stroke(new Path2D(p.legs.farFront.leg));
-  g.lineWidth = fw1 * 0.75; g.stroke(new Path2D(p.legs.farFront.hoof));
-  g.globalAlpha = 1;
-
-  g.lineWidth = 3.4; g.stroke(new Path2D(p.tail));
-  g.lineWidth = 2.3; g.stroke(new Path2D(HORSE.body));
-
+  g.fillStyle = '#b7afa0';
+  g.fill(new Path2D(p.legs.farRear.d)); g.fill(new Path2D(p.legs.farFront.d));
+  g.fillStyle = ink; g.strokeStyle = ink; g.lineCap = 'round';
+  g.lineWidth = 4.5; g.stroke(new Path2D(p.tail));
+  g.fill(new Path2D(HORSE.body));
   const [px, py] = HORSE.neckPivot;
   g.save();
   g.translate(px, py); g.rotate(p.neck * Math.PI / 180); g.translate(-px, -py);
-  g.lineWidth = 2.2; g.stroke(new Path2D(p.mane));
-  g.lineWidth = 2.3; g.stroke(new Path2D(HORSE.neck));
+  g.lineWidth = 2.4; g.stroke(new Path2D(p.mane));
+  g.fill(new Path2D(HORSE.neck));
   g.restore();
-
-  g.lineWidth = rw0; g.stroke(new Path2D(p.legs.nearRear.leg));
-  g.lineWidth = rw1; g.stroke(new Path2D(p.legs.nearRear.hoof));
-  g.lineWidth = fw0; g.stroke(new Path2D(p.legs.nearFront.leg));
-  g.lineWidth = fw1; g.stroke(new Path2D(p.legs.nearFront.hoof));
+  g.fill(new Path2D(p.legs.nearRear.d)); g.fill(new Path2D(p.legs.nearFront.d));
   g.restore();
 }
 
