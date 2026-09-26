@@ -1,5 +1,6 @@
-const CACHE = 'taximeter-v10';
-const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-512.png'];
+const CACHE = 'taximeter-v11';
+const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-512.png',
+  ...Array.from({ length: 12 }, (_, i) => `img/horse-${String(i + 1).padStart(2, '0')}.png`)];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
