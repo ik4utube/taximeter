@@ -643,8 +643,7 @@ async function drawReceipt() {
   return cv;
 }
 
-/** 영수증용: 달리는 프레임 하나를 잉크색으로 칠해서 그림 */
-async /** 영수증용: 질주 자세 하나를 잉크색 윤곽선으로 그림 (화면과 같은 스타일) */
+/** 영수증용: 질주 자세 하나를 잉크색 실루엣으로 그림 (화면과 같은 스타일) */
 function drawReceiptHorse(g, x, y, s, ink) {
   const p = horsePose(0.45, 1, 1);
   g.save();
