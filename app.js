@@ -12,6 +12,9 @@ const FARE = {
   slowKmh: 15.72,    // 이 속도 이하면 시간요금
 };
 
+// 친구끼리 쓰는 영수증용 재미 환산: 스타벅스 아메리카노(Tall) 기준가 (2026년 기준 4,700원)
+const COFFEE_PRICE = 4700;
+
 const $ = (s) => document.querySelector(s);
 const STORE = 'taximeter.v1';
 // 안드로이드 앱(Capacitor) 안에서 실행 중인지
@@ -445,6 +448,7 @@ async function drawReceipt() {
     ['kv', '적용할증', S.maxPct ? `최대 ${S.maxPct}%` : '없음'],
     ['dsep'],
     ['total'],
+    ['coffee'],
     ['dsep'],
     ['kv', '결제수단', '마음'],
     ['kv', '승인번호', String(S.start).slice(-8)],
@@ -454,7 +458,7 @@ async function drawReceipt() {
     ['small', '※ 실제로 청구되지 않습니다. 말이 달렸을 뿐이에요.'],
     ['small', '이용해 주셔서 감사합니다 · 안녕히 가세요'],
   ];
-  const H_OF = { title: 58, center: 20, sep: 20, dsep: 22, kv: 25, total: 62, gap: 6, horse: 84, barcode: 48, small: 19 };
+  const H_OF = { title: 58, center: 20, sep: 20, dsep: 22, kv: 25, total: 62, coffee: 48, gap: 6, horse: 84, barcode: 48, small: 19 };
   const paperH = rows.reduce((h, r) => h + H_OF[r[0]], 0) + 44;
   const H = paperH + M * 2;
 
@@ -519,6 +523,18 @@ async function drawReceipt() {
       const wW = g.measureText('원').width;
       g.font = '28px DSEG7, monospace';
       g.fillText(String(total()), X1 - wW - 6, mid);
+    } else if (type === 'coffee') {
+      // 친구끼리 보는 영수증이니까: 이 요금이 커피 몇 잔인지 재치로 한 줄
+      const cups = Math.max(1, Math.floor(total() / COFFEE_PRICE));
+      g.textAlign = 'center'; g.font = `13px ${MONO}`;
+      g.fillText(`☕ 이 돈이면 아아 ${cups}잔인데`, CX, y + 13);
+      const shown = Math.min(cups, 6);
+      const gap = 24, rowW = (shown - 1) * gap, startX = CX - rowW / 2;
+      for (let i = 0; i < shown; i++) drawCup(g, startX + i * gap, y + 35, 15);
+      if (cups > shown) {
+        g.textAlign = 'left'; g.font = `bold 11px ${MONO}`;
+        g.fillText(`+${cups - shown}`, startX + shown * gap - 4, y + 35);
+      }
     } else if (type === 'horse') {
       await drawReceiptHorse(g, CX - 52, y - 2, 104, INK);
     } else if (type === 'barcode') {
@@ -538,6 +554,26 @@ async function drawReceipt() {
     y += h;
   }
   return cv;
+}
+
+/** 영수증용 미니 커피잔 아이콘 (김이 살짝 나는 손잡이 컵). g.fillStyle이 곧 잉크색. */
+function drawCup(g, cx, cy, s) {
+  const w = s, h = s * 1.05, ink = g.fillStyle;
+  g.beginPath();
+  g.moveTo(cx - w * 0.34, cy - h * 0.42);
+  g.lineTo(cx + w * 0.34, cy - h * 0.42);
+  g.lineTo(cx + w * 0.24, cy + h * 0.46);
+  g.lineTo(cx - w * 0.24, cy + h * 0.46);
+  g.closePath();
+  g.fill();
+  g.strokeStyle = ink; g.lineWidth = w * 0.13; g.lineCap = 'round';
+  g.beginPath(); g.arc(cx + w * 0.42, cy - h * 0.02, w * 0.2, -1, 1); g.stroke();
+  for (const dx of [-w * 0.14, w * 0.1]) {
+    g.beginPath();
+    g.moveTo(cx + dx, cy - h * 0.52);
+    g.quadraticCurveTo(cx + dx - w * 0.12, cy - h * 0.72, cx + dx, cy - h * 0.9);
+    g.stroke();
+  }
 }
 
 /** 영수증용: 달리는 프레임 하나를 잉크색으로 칠해서 그림 */

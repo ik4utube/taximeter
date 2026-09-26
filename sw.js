@@ -1,4 +1,4 @@
-const CACHE = 'taximeter-v15';
+const CACHE = 'taximeter-v16';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-512.png',
   ...Array.from({ length: 12 }, (_, i) => `img/horse-${String(i + 1).padStart(2, '0')}.png`)];
 
